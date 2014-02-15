@@ -1,4 +1,4 @@
-package temathree.facedetector;
+package teamthree.facedetector;
 
 import android.app.Activity;
 import android.os.Bundle;
