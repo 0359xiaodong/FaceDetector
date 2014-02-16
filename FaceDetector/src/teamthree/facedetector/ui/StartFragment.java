@@ -7,19 +7,24 @@ import org.json.JSONObject;
 import teamthree.facedetector.R;
 import teamthree.facedetector.db.DBHelper;
 import teamthree.facedetector.db.provider.DBProvider;
+import teamthree.facedetector.ui.views.DisableTouchFrameLayout;
+import teamthree.facedetector.util.UtilHelper;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SimpleCursorAdapter;
 import android.support.v4.widget.SimpleCursorAdapter.ViewBinder;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -39,13 +44,17 @@ import com.facebook.model.GraphUser;
 import com.facebook.widget.LoginButton;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.assist.FailReason;
+import com.nostra13.universalimageloader.core.assist.ImageLoadingListener;
 
-public class StartFragment extends BaseListFragment implements
+public class StartFragment extends ListFragment implements
 		LoaderCallbacks<Cursor> {
 
 	public static final String TAG = StartFragment.class.getSimpleName();
 
 	private static final int FRIENDS_LOADER_ID = 101;
+
+	private DisableTouchFrameLayout mRoot = null;
 
 	private LoginButton mLoginBtn = null;
 	private UiLifecycleHelper mUiHelper = null;
@@ -61,6 +70,10 @@ public class StartFragment extends BaseListFragment implements
 	private ImageLoader mImageLoader = null;
 
 	private Menu mMenu = null;
+
+	private int activeDownloaders = 0;
+
+	private boolean mCheckDisableTouch = false;
 
 	public static Fragment newInstance(FragmentActivity activity) {
 
@@ -93,7 +106,8 @@ public class StartFragment extends BaseListFragment implements
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
 
-		mRoot = inflater.inflate(R.layout.start_fragment, null);
+		mRoot = (DisableTouchFrameLayout) inflater.inflate(
+				R.layout.start_fragment, null);
 
 		mProgressBar = (ProgressBar) mRoot.findViewById(R.id.start_fragment_pb);
 
@@ -117,7 +131,55 @@ public class StartFragment extends BaseListFragment implements
 							.getColumnIndex(DBHelper.KEY_COLUMN_PICTURE));
 					if (mImageLoader != null && mOptions != null
 							&& photoUrl != null && !TextUtils.isEmpty(photoUrl))
-						mImageLoader.displayImage(photoUrl, avatar, mOptions);
+						mImageLoader.displayImage(photoUrl, avatar, mOptions,
+								new ImageLoadingListener() {
+
+									@Override
+									public void onLoadingStarted(String arg0,
+											View arg1) {
+
+										activeDownloaders++;
+										if (!UtilHelper.isImageDownloaded()) {
+
+										}
+									}
+
+									@Override
+									public void onLoadingFailed(String arg0,
+											View arg1, FailReason arg2) {
+
+										activeDownloaders--;
+										if (!UtilHelper.isImageDownloaded()
+												&& !mCheckDisableTouch) {
+
+											checkDisableTouch();
+										}
+									}
+
+									@Override
+									public void onLoadingComplete(String arg0,
+											View arg1, Bitmap arg2) {
+
+										activeDownloaders--;
+										if (!UtilHelper.isImageDownloaded()
+												&& !mCheckDisableTouch) {
+
+											checkDisableTouch();
+										}
+									}
+
+									@Override
+									public void onLoadingCancelled(String arg0,
+											View arg1) {
+
+										activeDownloaders--;
+										if (!UtilHelper.isImageDownloaded()
+												&& !mCheckDisableTouch) {
+
+											checkDisableTouch();
+										}
+									}
+								});
 
 					return true;
 				}
@@ -128,6 +190,38 @@ public class StartFragment extends BaseListFragment implements
 		getLoaderManager().restartLoader(FRIENDS_LOADER_ID, null, this);
 
 		return mRoot;
+	}
+
+	private void checkDisableTouch() {
+
+		mCheckDisableTouch = true;
+		mRoot.postDelayed(new Runnable() {
+
+			@Override
+			public void run() {
+
+				Log.d("TEST", "activeDownloaders = " + activeDownloaders);
+				if (mRoot != null)
+					mRoot.setDisableTouch(activeDownloaders > 0);
+				if (activeDownloaders == 0) {
+
+					if (!(getListView() != null && getListView()
+							.getLastVisiblePosition() == mAdapter.getCount() - 1)) {
+
+						Log.d("TEST", "smoothScrollBy");
+						if (getListView() != null)
+							getListView().smoothScrollBy(
+									getListView().getHeight(), 700);
+					} else {
+
+						Log.d("TEST", "setImageDownloaded true");
+						UtilHelper.setImageDownloaded(getActivity(), true);
+					}
+				}
+
+				mCheckDisableTouch = false;
+			}
+		}, 250);
 	}
 
 	@Override
@@ -258,7 +352,7 @@ public class StartFragment extends BaseListFragment implements
 			break;
 
 		case R.id.action_from_photo:
-			
+
 			// TODO
 			break;
 		}
@@ -291,6 +385,7 @@ public class StartFragment extends BaseListFragment implements
 			mAdapter.swapCursor(cursor);
 			setListShown(false);
 			setCreatePhotoVisible(cursor != null && cursor.getCount() > 0);
+
 		}
 	}
 

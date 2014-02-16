@@ -1,5 +1,6 @@
 package teamthree.facedetector;
 
+import teamthree.facedetector.util.UtilHelper;
 import android.app.Application;
 
 import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
@@ -12,6 +13,8 @@ public class FaceDetectorApplication extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
+
+		UtilHelper.init(getApplicationContext());
 
 		ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(
 				getApplicationContext())
