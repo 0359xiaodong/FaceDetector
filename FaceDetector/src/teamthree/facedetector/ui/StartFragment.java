@@ -229,7 +229,8 @@ public class StartFragment extends BaseListFragment implements
 							}
 						});
 				Bundle params = new Bundle();
-				params.putString("fields", "id, first_name, last_name, picture");
+				params.putString("fields",
+						"id, first_name, last_name, picture.type(large)");
 				friendRequest.setParameters(params);
 				friendRequest.executeAsync();
 			} else if (state.isClosed()) {
