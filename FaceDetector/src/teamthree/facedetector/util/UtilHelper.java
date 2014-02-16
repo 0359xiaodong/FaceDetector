@@ -1,6 +1,8 @@
 package teamthree.facedetector.util;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.preference.PreferenceManager;
 
 public class UtilHelper {
@@ -28,5 +30,15 @@ public class UtilHelper {
 			mUtilHelper = new UtilHelper();
 		mIsImageDownloaded = PreferenceManager.getDefaultSharedPreferences(
 				context).getBoolean(KEY_IMAGE_DOWNLOADED, false);
+	}
+
+	public static Bitmap rotateImage(Bitmap src, float degree) {
+
+		Matrix matrix = new Matrix();
+		matrix.postRotate(degree);
+		Bitmap bmp = Bitmap.createBitmap(src, 0, 0, src.getWidth(),
+				src.getHeight(), matrix, true);
+
+		return bmp;
 	}
 }

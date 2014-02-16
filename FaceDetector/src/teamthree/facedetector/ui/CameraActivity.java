@@ -1,52 +1,55 @@
 package teamthree.facedetector.ui;
 
 import teamthree.facedetector.R;
-import android.app.Activity;
+import teamthree.facedetector.ui.views.FaceDetectorImageView;
+import teamthree.facedetector.util.UtilHelper;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.hardware.Camera;
 import android.hardware.Camera.PictureCallback;
+import android.media.FaceDetector;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
-import android.widget.ImageView;
+import android.widget.Toast;
 
-public class CameraActivity extends Activity implements OnClickListener,
+public class CameraActivity extends FragmentActivity implements
 		SurfaceHolder.Callback {
+
+	public static final int MAX_FACES = 5;
 
 	private SurfaceView mSurfaceView;
 	private Camera mCamera;
-	private Button mStopBtn;
-	private ImageView mImageView;
+	private FaceDetectorImageView mImageView;
+
+	private FaceDetector.Face[] faces;
+
+	private Menu mMenu;
+
+	private int friendsCount = 0;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.camera_activity);
 
-		mStopBtn = (Button) findViewById(R.id.stop_btn);
-		mStopBtn.setOnClickListener(new OnClickListener() {
-
-			@Override
-			public void onClick(View v) {
-
-				getPicture();
-
-			}
-		});
+		getActionBar().setHomeButtonEnabled(true);
+		getActionBar().setDisplayHomeAsUpEnabled(true);
 		mSurfaceView = (SurfaceView) findViewById(R.id.camera);
-		mImageView = (ImageView) findViewById(R.id.imageView);
+		mImageView = (FaceDetectorImageView) findViewById(R.id.imageView);
 		mImageView.setVisibility(View.GONE);
 		SurfaceHolder holder = mSurfaceView.getHolder();
 		holder.addCallback(this);
 
 	}
 
-	public void getPicture() {
+	private void getPicture() {
 
 		mCamera.takePicture(null, null, new PictureCallback() {
 
@@ -59,12 +62,18 @@ public class CameraActivity extends Activity implements OnClickListener,
 					public void run() {
 
 						mImageView.setVisibility(View.VISIBLE);
-						mImageView.setRotation(90);
-						mImageView.setImageBitmap(BitmapFactory
-								.decodeByteArray(data, 0, data.length));
+						BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
+						bitmapOptions.inPreferredConfig = Bitmap.Config.RGB_565;
+						bitmapOptions.inScaled = false;
+						bitmapOptions.inDither = false;
+						Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0,
+								data.length, bitmapOptions);
+						Bitmap rotateBitmap = UtilHelper
+								.rotateImage(bitmap, 90);
+						mImageView.setImageBitmap(rotateBitmap);
+						detectFace(rotateBitmap);
 						mSurfaceView.setVisibility(View.GONE);
-						mStopBtn.setText("Compare");
-						mStopBtn.setOnClickListener(CameraActivity.this);
+						mMenu.findItem(R.id.action_get_photo).setVisible(false);
 						if (mCamera != null) {
 							mCamera.stopPreview();
 							mCamera.release();
@@ -78,10 +87,44 @@ public class CameraActivity extends Activity implements OnClickListener,
 		});
 	}
 
-	@Override
-	public void onClick(View v) {
+	private void detectFace(Bitmap bitmap) {
 
-		Bitmap bitmap = ((BitmapDrawable) mImageView.getDrawable()).getBitmap();
+		FaceDetector face_detector = new FaceDetector(bitmap.getWidth(),
+				bitmap.getHeight(), MAX_FACES);
+		faces = new FaceDetector.Face[MAX_FACES];
+		friendsCount = face_detector.findFaces(bitmap, faces);
+
+		if (friendsCount > 0) {
+
+			mImageView.setCount(friendsCount);
+			mImageView.setFaces(faces);
+			mImageView.invalidate();
+		} else {
+
+			Toast.makeText(getApplicationContext(), R.string.toast_detection,
+					Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.camera, menu);
+		mMenu = menu;
+
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+
+		if (item.getItemId() == R.id.action_get_photo)
+			getPicture();
+		else if (item.getItemId() == android.R.id.home)
+			finish();
+
+		return super.onOptionsItemSelected(item);
 	}
 
 	@Override
@@ -90,7 +133,6 @@ public class CameraActivity extends Activity implements OnClickListener,
 
 		if (mCamera != null)
 			mCamera.startPreview();
-
 	}
 
 	@Override
@@ -127,21 +169,4 @@ public class CameraActivity extends Activity implements OnClickListener,
 		}
 		super.onDestroy();
 	}
-
-	// private void convert() {
-	//
-	// Matrix matrix = new Matrix();
-	// CameraInfo info = CameraHolder.instance().getCameraInfo()[R.id.camera];
-	// // Need mirror for front camera.
-	// boolean mirror = (info.facing == CameraInfo.CAMERA_FACING_FRONT);
-	// matrix.setScale(mirror ? -1 : 1, 1);
-	// // This is the value for android.hardware.Camera.setDisplayOrientation.
-	// matrix.postRotate(90);
-	// // Camera driver coordinates range from (-1000, -1000) to (1000, 1000).
-	// // UI coordinates range from (0, 0) to (width, height).
-	// matrix.postScale(mSurfaceView.getWidth() / 2000f,
-	// mSurfaceView.getHeight() / 2000f);
-	// matrix.postTranslate(mSurfaceView.getWidth() / 2f,
-	// mSurfaceView.getHeight() / 2f);
-	// }
 }
