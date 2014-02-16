@@ -254,12 +254,13 @@ public class StartFragment extends BaseListFragment implements
 
 		case R.id.action_from_camera:
 
-			// TODO
 			break;
 
 		case R.id.action_from_photo:
-			
-			// TODO
+
+			Intent intent = new Intent(getActivity(), CameraActivity.class);
+			startActivity(intent);
+
 			break;
 		}
 
