@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Face detector</string>
-    <string name="action_create_photo">CREATE PHOTO</string>
-    <string name="hello_world">Hello world!</string>
+    <string name="app_name">Detector</string>
+    <string name="action_from_photo">FROM PHOTO</string>
+    <string name="action_from_camera">FROM CAMERA</string>
 
     <!-- Facebook -->
     <string name="login_btn_facebook">Connect with Facebook</string>

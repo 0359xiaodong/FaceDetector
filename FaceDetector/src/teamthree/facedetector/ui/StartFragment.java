@@ -250,6 +250,19 @@ public class StartFragment extends BaseListFragment implements
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 
+		switch (item.getItemId()) {
+
+		case R.id.action_from_camera:
+
+			// TODO
+			break;
+
+		case R.id.action_from_photo:
+			
+			// TODO
+			break;
+		}
+
 		return super.onOptionsItemSelected(item);
 	}
 
@@ -283,8 +296,11 @@ public class StartFragment extends BaseListFragment implements
 
 	private void setCreatePhotoVisible(boolean visible) {
 
-		if (mMenu != null && mMenu.findItem(R.id.action_take_photo) != null)
-			mMenu.findItem(R.id.action_take_photo).setVisible(visible);
+		if (mMenu != null && mMenu.findItem(R.id.action_from_photo) != null)
+			mMenu.findItem(R.id.action_from_photo).setVisible(visible);
+
+		if (mMenu != null && mMenu.findItem(R.id.action_from_camera) != null)
+			mMenu.findItem(R.id.action_from_camera).setVisible(visible);
 	}
 
 	@Override
